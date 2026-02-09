@@ -9,6 +9,7 @@
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/managers/EventManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/debug/Log.hpp>
 #include "globals.hpp"
 
 #include <unistd.h>
@@ -31,7 +32,7 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 
   void setXWaylandPrimary() {
     if (!g_pXWayland || !g_pXWayland->m_wm || !g_pXWayland->m_wm->m_connection || !g_pXWayland->m_wm->m_screen) {
-      Debug::log(LOG, "XWaylandPrimary: No XWayland client");
+      Log::logger->log(Log::DEBUG, "[XWaylandPrimary] No XWayland client");
       return;
     }
     static auto* const PRIMARYNAME = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display")->getDataStaticPtr();
@@ -40,13 +41,13 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 
     auto PMONITOR = g_pCompositor->getMonitorFromName(std::string{*PRIMARYNAME});
 
-    if (dofollow && g_pCompositor->m_lastMonitor)
+    if (dofollow && g_pCompositor->m_pLastMonitor)
     {
-      PMONITOR = g_pCompositor->m_lastMonitor.lock();
+      PMONITOR = g_pCompositor->m_pLastMonitor.lock();
     }
 
     if (!PMONITOR) {
-      Debug::log(LOG, "XWaylandPrimary: Could not find monitor {}", std::string{*PRIMARYNAME});
+      Log::logger->log(Log::DEBUG, "[XWaylandPrimary] Could not find monitor {}", std::string{*PRIMARYNAME});
       return;
     }
   
@@ -71,10 +72,10 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 			}
 			uint8_t *output_name = xcb_randr_get_output_info_name(output);
 			int len = xcb_randr_get_output_info_name_length(output);
-		  Debug::log(LOG, "XWaylandPrimary: RANDR OUTPUT {}", (char *)output_name);
+		  Log::logger->log(Log::DEBUG, "[XWaylandPrimary] RANDR OUTPUT {}", (char *)output_name);
 			if (!strncmp((char *)output_name, PMONITOR->m_name.c_str(), len))
 			{
-          Debug::log(LOG, "XWaylandPrimary: setting primary monitor {}", (char *)output_name);
+          Log::logger->log(Log::DEBUG, "[XWaylandPrimary] setting primary monitor {}", (char *)output_name);
           xcb_void_cookie_t p_cookie = xcb_randr_set_output_primary_checked(XCBCONN, screen->root, x_outputs[i]);
           xcb_request_check(XCBCONN, p_cookie);
           if (prerenderHook)
@@ -113,7 +114,7 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
     for(auto & m: g_pCompositor->m_monitors) {
       if (!m->m_output)
         continue;
-      Debug::log(LOG, "XWaylandPrimary: MONITOR {} X {} Y {} WIDTH {} HEIGHT {}", m->m_name, m->m_position.x, m->m_position.y, m->m_size.x, m->m_size.y);
+      Log::logger->log(Log::DEBUG, "[XWaylandPrimary] MONITOR {} X {} Y {} WIDTH {} HEIGHT {}", m->m_name, m->m_position.x, m->m_position.y, m->m_size.x, m->m_size.y);
     }
     if (g_pXWayland->m_wm && g_pXWayland->m_wm->m_connection) {
       //Xwayland may not have created the new output yet, so delay via a periodic hook until it does. 
